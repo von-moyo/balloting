@@ -1,0 +1,31 @@
+#!/bin/bash
+echo "Start"
+if [ "$#" -ne 3 ]; then
+  echo "Usage: $0 <matric_no> <password> <HallId>"
+  exit 1
+fi
+
+matric_no="$1"
+password="$2"
+HallId="$3"
+
+response=$(curl -s -m 120 -X POST -d "MatricNo=$matric_no&Password=$password" https://studentportalbeta.unilag.edu.ng/users/login)
+
+if [ $? -ne 0 ]; then
+  echo "The initial request timed out."
+  exit 1
+fi
+
+# echo $response
+
+authorization_token=$(echo "$response" | jq -r '.Data.Token')
+# echo $authorization_token
+
+if [ -z "$authorization_token" ]; then
+  echo "Failed to obtain the authorization token."
+  exit 1
+fi
+
+second_response=$(curl -X POST -H "Authorization: Bearer $authorization_token" -d "HallId=$HallId" https://studentportalbeta.unilag.edu.ng/accomodation/saveAccommodationReservation)
+
+echo "Reservation: $second_response"
